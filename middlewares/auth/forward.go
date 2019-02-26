@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/containous/traefik/middlewares"
+
 	"github.com/containous/traefik/log"
 	"github.com/containous/traefik/middlewares/tracing"
 	"github.com/containous/traefik/types"
@@ -49,6 +51,11 @@ func Forward(config *types.Forward, w http.ResponseWriter, r *http.Request, next
 	}
 
 	writeHeader(r, forwardReq, config.TrustForwardHeader)
+
+	if config.PassTLSClientCert != nil {
+		middleware := middlewares.NewTLSClientHeaders(config.PassTLSClientCert)
+		middleware.SetRequestHeaders(r, forwardReq)
+	}
 
 	tracing.InjectRequestHeaders(forwardReq)
 

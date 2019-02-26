@@ -399,7 +399,7 @@ func TestTlsClientheadersWithPEM(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		tlsClientHeaders := NewTLSClientHeaders(&types.Frontend{PassTLSClientCert: test.tlsClientCertHeaders})
+		tlsClientHeaders := NewTLSClientHeadersForFrontend(&types.Frontend{PassTLSClientCert: test.tlsClientCertHeaders})
 
 		res := httptest.NewRecorder()
 		req := testhelpers.MustNewRequest(http.MethodGet, "http://example.com/foo", nil)
@@ -627,7 +627,7 @@ func TestTlsClientheadersWithCertInfos(t *testing.T) {
 		},
 	}
 	for _, test := range testCases {
-		tlsClientHeaders := NewTLSClientHeaders(&types.Frontend{PassTLSClientCert: test.tlsClientCertHeaders})
+		tlsClientHeaders := NewTLSClientHeadersForFrontend(&types.Frontend{PassTLSClientCert: test.tlsClientCertHeaders})
 
 		res := httptest.NewRecorder()
 		req := testhelpers.MustNewRequest(http.MethodGet, "http://example.com/foo", nil)
@@ -1004,7 +1004,7 @@ func TestNewTLSClientHeadersFromStruct(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
-			require.Equal(t, test.expected, NewTLSClientHeaders(test.frontend))
+			require.Equal(t, test.expected, NewTLSClientHeadersForFrontend(test.frontend))
 		})
 	}
 

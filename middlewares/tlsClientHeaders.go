@@ -78,19 +78,22 @@ func newTLSClientInfos(infos *types.TLSClientCertificateInfos) *TLSClientCertifi
 	}
 }
 
-// NewTLSClientHeaders constructs a new TLSClientHeaders instance from supplied frontend header struct.
-func NewTLSClientHeaders(frontend *types.Frontend) *TLSClientHeaders {
+// NewTLSClientHeadersForFrontend constructs a new TLSClientHeaders instance from supplied frontend header struct.
+func NewTLSClientHeadersForFrontend(frontend *types.Frontend) *TLSClientHeaders {
 	if frontend == nil {
 		return nil
 	}
 
+	return NewTLSClientHeaders(frontend.PassTLSClientCert)
+}
+
+func NewTLSClientHeaders(config *types.TLSClientHeaders) *TLSClientHeaders {
 	var addPEM bool
 	var infos *TLSClientCertificateInfos
 
-	if frontend.PassTLSClientCert != nil {
-		conf := frontend.PassTLSClientCert
-		addPEM = conf.PEM
-		infos = newTLSClientInfos(conf.Infos)
+	if config != nil {
+		addPEM = config.PEM
+		infos = newTLSClientInfos(config.Infos)
 	}
 
 	return &TLSClientHeaders{
@@ -270,18 +273,23 @@ func (s *TLSClientHeaders) getXForwardedTLSClientCertInfo(certs []*x509.Certific
 
 // ModifyRequestHeaders set the wanted headers with the certificates informations
 func (s *TLSClientHeaders) ModifyRequestHeaders(r *http.Request) {
+	s.SetRequestHeaders(r, r)
+}
+
+// SetRequestHeaders sets the wanted headers on the dstRequest from the certificate presented on the srcRequest
+func (s *TLSClientHeaders) SetRequestHeaders(srcRequest *http.Request, dstRequest *http.Request) {
 	if s.PEM {
-		if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
-			r.Header.Set(xForwardedTLSClientCert, getXForwardedTLSClientCert(r.TLS.PeerCertificates))
+		if srcRequest.TLS != nil && len(srcRequest.TLS.PeerCertificates) > 0 {
+			dstRequest.Header.Set(xForwardedTLSClientCert, getXForwardedTLSClientCert(srcRequest.TLS.PeerCertificates))
 		} else {
 			log.Warn("Try to extract certificate on a request without TLS")
 		}
 	}
 
 	if s.Infos != nil {
-		if r.TLS != nil && len(r.TLS.PeerCertificates) > 0 {
-			headerContent := s.getXForwardedTLSClientCertInfo(r.TLS.PeerCertificates)
-			r.Header.Set(xForwardedTLSClientCertInfos, url.QueryEscape(headerContent))
+		if srcRequest.TLS != nil && len(srcRequest.TLS.PeerCertificates) > 0 {
+			headerContent := s.getXForwardedTLSClientCertInfo(srcRequest.TLS.PeerCertificates)
+			dstRequest.Header.Set(xForwardedTLSClientCertInfos, url.QueryEscape(headerContent))
 		} else {
 			log.Warn("Try to extract certificate on a request without TLS")
 		}
